@@ -3,5 +3,18 @@
   "version": "0.0.1",
   "license": "MIT",
   "author": "mpoc",
-  "repository": "github:mpoc/domain-checker"
+  "repository": "github:mpoc/domain-checker",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@vercel/sdk": "^1.17.0",
+    "zod": "^4.1.12"
+  }
 }

@@ -1,11 +1,21 @@
 import { Database } from "bun:sqlite";
 import { Vercel } from "@vercel/sdk";
 import Bun from "bun";
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/bun-sqlite";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 
-const db = new Database("domains.sqlite");
+const domainCache = sqliteTable("domain_cache", {
+  domain: text("domain").primaryKey(),
+  available: integer("available").notNull(),
+  checkedAt: integer("checked_at").notNull(),
+});
 
-db.run(`
+const sqlite = new Database("domains.sqlite");
+const db = drizzle(sqlite);
+
+sqlite.run(`
   CREATE TABLE IF NOT EXISTS domain_cache (
     domain TEXT PRIMARY KEY,
     available INTEGER,
@@ -22,9 +32,9 @@ const domainsArraySchema = z.array(domainSchema);
 
 const loadDomainsFromFile = async (path: string): Promise<Set<string>> => {
   const file = Bun.file(path);
-  const text = await file.text();
+  const domains = await file.text();
 
-  const lines = text
+  const lines = domains
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0 && !line.startsWith("#")); // Allow comments with #
@@ -53,8 +63,10 @@ const checkDomains = async (domains: Set<string>) => {
 
   for (const domain of domains) {
     const cached = db
-      .query("SELECT domain, available FROM domain_cache WHERE domain = ?")
-      .get(domain) as { domain: string; available: number } | null;
+      .select()
+      .from(domainCache)
+      .where(eq(domainCache.domain, domain))
+      .get();
 
     if (cached) {
       results.push({ domain: cached.domain, available: !!cached.available });
@@ -73,10 +85,6 @@ const checkDomains = async (domains: Set<string>) => {
       chunks.push(uncached.slice(i, i + 50));
     }
 
-    const insert = db.prepare(
-      "INSERT OR REPLACE INTO domain_cache (domain, available, checked_at) VALUES (?, ?, ?)"
-    );
-
     for (const [index, chunk] of chunks.entries()) {
       console.log(
         `Processing chunk ${index + 1}/${chunks.length} (${chunk.length} domains)`
@@ -90,7 +98,21 @@ const checkDomains = async (domains: Set<string>) => {
       });
 
       for (const { domain, available } of result.results) {
-        insert.run(domain, available ? 1 : 0, Date.now());
+        await db
+          .insert(domainCache)
+          .values({
+            domain,
+            available: available ? 1 : 0,
+            checkedAt: Date.now(),
+          })
+          .onConflictDoUpdate({
+            target: domainCache.domain,
+            set: {
+              available: available ? 1 : 0,
+              checkedAt: Date.now(),
+            },
+          });
+
         results.push({ domain, available });
       }
 

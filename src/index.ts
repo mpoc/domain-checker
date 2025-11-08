@@ -1,5 +1,6 @@
 import { Database } from "bun:sqlite";
 import { Vercel } from "@vercel/sdk";
+import Bun from "bun";
 import { z } from "zod";
 
 const db = new Database("domains.sqlite");

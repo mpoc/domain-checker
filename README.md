@@ -22,7 +22,7 @@ bun i
 bun src/index.ts domains.txt
 ```
 
-## View Results
+### View Results
 
 ```bash
 uvx datasette serve domains.sqlite

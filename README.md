@@ -4,7 +4,7 @@ Bulk check domain availability using Vercel Domains API, caching results in a SQ
 
 ## How to run
 
-### Save to .env
+### Save to `.env`
 
 ```env
 # Get from https://vercel.com/account/settings/tokens

@@ -1,15 +1,25 @@
 # domain-checker
 
-To install dependencies:
+Bulk check domain availability using Vercel Domains API, caching results in a SQLite database.
 
-```bash
-bun install
+## Run
+
+Save to .env:
+
+```env
+# Get from https://vercel.com/account/settings/tokens
+VERCEL_BEARER_TOKEN=your_vercel_token
+VERCEL_TEAM_ID=your_vercel_team_id
 ```
 
-To run:
-
 ```bash
-bun run src/index.ts
+echo example.com > domains.txt
+bun i
+bun src/index.ts domains.txt
 ```
 
-This project was created using `bun init` in bun v1.3.1. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+## View Results
+
+```bash
+uvx datasette serve domains.sqlite
+```

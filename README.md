@@ -2,6 +2,8 @@
 
 Bulk check domain availability using Vercel Domains API, caching results in a SQLite database.
 
+![Example](example.svg)
+
 ## How to run
 
 ### Save to `.env`

@@ -11,7 +11,7 @@ const loadDomainsFromFile = async (path: string): Promise<Set<string>> => {
   const lines = domains
     .split("\n")
     .map((line) => line.trim())
-    .filter((line) => line.length > 0 && !line.startsWith("#")); // Allow comments with #
+    .filter((line) => line.length && !line.startsWith("#")); // Allow comments with #
 
   try {
     const validatedDomains = z.hostname().array().parse(lines);

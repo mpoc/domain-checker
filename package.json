@@ -7,6 +7,9 @@
   "module": "src/index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "inspect": "uvx datasette serve domains.sqlite"
+  },
   "devDependencies": {
     "@biomejs/biome": "2.3.4",
     "@tsconfig/bun": "^1.0.9",

@@ -110,12 +110,13 @@ const checkDomains = async (domains: Set<string>) => {
 
   console.log("Found cached results for", results.length, "domains");
 
-  if (uncached.length > 0) {
+  if (uncached.length) {
     console.log("Checking availability for", uncached.length, "domains");
 
     const chunks: string[][] = [];
-    for (let i = 0; i < uncached.length; i += 50) {
-      chunks.push(uncached.slice(i, i + 50));
+    const CHUNK_SIZE = 50;
+    for (let i = 0; i < uncached.length; i += CHUNK_SIZE) {
+      chunks.push(uncached.slice(i, i + CHUNK_SIZE));
     }
 
     for (const [index, chunk] of chunks.entries()) {

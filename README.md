@@ -11,6 +11,7 @@ Bulk check domain availability using Vercel Domains API, caching results in a SQ
 ```env
 # Get from https://vercel.com/account/settings/tokens
 VERCEL_BEARER_TOKEN=your_vercel_token
+# Optional
 VERCEL_TEAM_ID=your_vercel_team_id
 ```
 

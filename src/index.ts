@@ -6,6 +6,7 @@ import { drizzle } from "drizzle-orm/bun-sqlite";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 import { chunk } from "./chunk";
+import { env } from "./env";
 
 const domainCache = sqliteTable("domain_cache", {
   domain: text("domain").primaryKey(),
@@ -25,7 +26,7 @@ sqlite.run(`
 `);
 
 const vercel = new Vercel({
-  bearerToken: process.env.VERCEL_BEARER_TOKEN,
+  bearerToken: env.VERCEL_BEARER_TOKEN,
 });
 
 const loadDomainsFromFile = async (path: string): Promise<Set<string>> => {
@@ -80,7 +81,7 @@ const partitionDomainsByCacheState = (domains: Set<string>) => {
 
 const fetchDomainAvailability = async (chunk: string[]) =>
   await vercel.domainsRegistrar.getBulkAvailability({
-    teamId: process.env.VERCEL_TEAM_ID,
+    teamId: env.VERCEL_TEAM_ID,
     requestBody: {
       domains: chunk,
     },

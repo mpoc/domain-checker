@@ -9,6 +9,7 @@
   "private": true,
   "devDependencies": {
     "@biomejs/biome": "2.3.4",
+    "@tsconfig/bun": "^1.0.9",
     "@types/bun": "latest",
     "ultracite": "6.3.2"
   },

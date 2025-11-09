@@ -9,6 +9,8 @@ export const domainCache = sqliteTable("domain_cache", {
   checkedAt: integer("checked_at").notNull(),
 });
 
+export type DomainCacheEntry = typeof domainCache.$inferSelect;
+
 const sqlite = new Database("domains.sqlite");
 sqlite.run(`
   CREATE TABLE IF NOT EXISTS domain_cache (
@@ -23,8 +25,14 @@ const db = drizzle(sqlite);
 export const getCachedDomain = (domain: string) =>
   db.select().from(domainCache).where(eq(domainCache.domain, domain)).get();
 
-export const cacheDomain = async (domain: string, available: boolean) => {
-  await db
+export const cacheDomain = ({
+  domain,
+  available,
+}: {
+  domain: string;
+  available: boolean;
+}) =>
+  db
     .insert(domainCache)
     .values({
       domain,
@@ -37,5 +45,6 @@ export const cacheDomain = async (domain: string, available: boolean) => {
         available,
         checkedAt: Date.now(),
       },
-    });
-};
+    })
+    .returning()
+    .get();

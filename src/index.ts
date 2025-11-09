@@ -10,7 +10,7 @@ import { env } from "./env";
 
 const domainCache = sqliteTable("domain_cache", {
   domain: text("domain").primaryKey(),
-  available: integer("available").notNull(),
+  available: integer("available", { mode: "boolean" }).notNull(),
   checkedAt: integer("checked_at").notNull(),
 });
 
@@ -70,7 +70,7 @@ const partitionDomainsByCacheState = (domains: Set<string>) => {
     if (cached) {
       cachedDomains.push({
         domain: cached.domain,
-        available: !!cached.available,
+        available: cached.available,
       });
     } else {
       uncachedDomains.push(domain);
@@ -92,13 +92,13 @@ const cacheDomain = async (domain: string, available: boolean) => {
     .insert(domainCache)
     .values({
       domain,
-      available: available ? 1 : 0,
+      available,
       checkedAt: Date.now(),
     })
     .onConflictDoUpdate({
       target: domainCache.domain,
       set: {
-        available: available ? 1 : 0,
+        available,
         checkedAt: Date.now(),
       },
     });

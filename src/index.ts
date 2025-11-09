@@ -18,8 +18,8 @@ const db = drizzle(sqlite);
 sqlite.run(`
   CREATE TABLE IF NOT EXISTS domain_cache (
     domain TEXT PRIMARY KEY,
-    available INTEGER,
-    checked_at INTEGER
+    available INTEGER NOT NULL,
+    checked_at INTEGER NOT NULL
   )
 `);
 

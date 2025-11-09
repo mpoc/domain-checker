@@ -79,11 +79,11 @@ const partitionDomainsByCacheState = (domains: Set<string>) => {
   return { cached: cachedDomains, uncached: uncachedDomains };
 };
 
-const fetchDomainAvailability = async (chunk: string[]) =>
+const fetchDomainAvailability = async (domains: string[]) =>
   await vercel.domainsRegistrar.getBulkAvailability({
     teamId: env.VERCEL_TEAM_ID,
     requestBody: {
-      domains: chunk,
+      domains,
     },
   });
 

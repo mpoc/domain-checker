@@ -57,9 +57,9 @@ const loadDomainsFromFile = async (path: string): Promise<Set<string>> => {
   }
 };
 
-const checkDomains = async (domains: Set<string>) => {
-  const uncached: string[] = [];
-  const results: { domain: string; available: boolean }[] = [];
+const partitionDomainsByCacheState = (domains: Set<string>) => {
+  const uncachedDomains: string[] = [];
+  const cachedDomains: { domain: string; available: boolean }[] = [];
 
   for (const domain of domains) {
     const cached = db
@@ -69,11 +69,44 @@ const checkDomains = async (domains: Set<string>) => {
       .get();
 
     if (cached) {
-      results.push({ domain: cached.domain, available: !!cached.available });
+      cachedDomains.push({
+        domain: cached.domain,
+        available: !!cached.available,
+      });
     } else {
-      uncached.push(domain);
+      uncachedDomains.push(domain);
     }
   }
+  return { cached: cachedDomains, uncached: uncachedDomains };
+};
+
+const fetchDomainAvailability = async (chunk: string[]) =>
+  await vercel.domainsRegistrar.getBulkAvailability({
+    teamId: process.env.VERCEL_TEAM_ID,
+    requestBody: {
+      domains: chunk,
+    },
+  });
+
+const cacheDomain = async (domain: string, available: boolean) => {
+  await db
+    .insert(domainCache)
+    .values({
+      domain,
+      available: available ? 1 : 0,
+      checkedAt: Date.now(),
+    })
+    .onConflictDoUpdate({
+      target: domainCache.domain,
+      set: {
+        available: available ? 1 : 0,
+        checkedAt: Date.now(),
+      },
+    });
+};
+
+const checkDomains = async (domains: Set<string>) => {
+  const { cached: results, uncached } = partitionDomainsByCacheState(domains);
 
   console.log("Found cached results for", results.length, "domains");
 
@@ -90,29 +123,10 @@ const checkDomains = async (domains: Set<string>) => {
         `Processing chunk ${index + 1}/${chunks.length} (${chunk.length} domains)`
       );
 
-      const result = await vercel.domainsRegistrar.getBulkAvailability({
-        teamId: process.env.VERCEL_TEAM_ID,
-        requestBody: {
-          domains: chunk,
-        },
-      });
+      const result = await fetchDomainAvailability(chunk);
 
       for (const { domain, available } of result.results) {
-        await db
-          .insert(domainCache)
-          .values({
-            domain,
-            available: available ? 1 : 0,
-            checkedAt: Date.now(),
-          })
-          .onConflictDoUpdate({
-            target: domainCache.domain,
-            set: {
-              available: available ? 1 : 0,
-              checkedAt: Date.now(),
-            },
-          });
-
+        await cacheDomain(domain, available);
         results.push({ domain, available });
       }
 

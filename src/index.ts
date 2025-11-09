@@ -1,33 +1,8 @@
-import { Database } from "bun:sqlite";
-import { Vercel } from "@vercel/sdk";
 import Bun from "bun";
-import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/bun-sqlite";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 import { chunk } from "./chunk";
-import { env } from "./env";
-
-const domainCache = sqliteTable("domain_cache", {
-  domain: text("domain").primaryKey(),
-  available: integer("available", { mode: "boolean" }).notNull(),
-  checkedAt: integer("checked_at").notNull(),
-});
-
-const sqlite = new Database("domains.sqlite");
-const db = drizzle(sqlite);
-
-sqlite.run(`
-  CREATE TABLE IF NOT EXISTS domain_cache (
-    domain TEXT PRIMARY KEY,
-    available INTEGER NOT NULL,
-    checked_at INTEGER NOT NULL
-  )
-`);
-
-const vercel = new Vercel({
-  bearerToken: env.VERCEL_BEARER_TOKEN,
-});
+import { cacheDomain, getCachedDomain } from "./db";
+import { fetchDomainAvailability } from "./vercel";
 
 const loadDomainsFromFile = async (path: string): Promise<Set<string>> => {
   const file = Bun.file(path);
@@ -61,11 +36,7 @@ const partitionDomainsByCacheState = (domains: Set<string>) => {
   const cachedDomains: { domain: string; available: boolean }[] = [];
 
   for (const domain of domains) {
-    const cached = db
-      .select()
-      .from(domainCache)
-      .where(eq(domainCache.domain, domain))
-      .get();
+    const cached = getCachedDomain(domain);
 
     if (cached) {
       cachedDomains.push({
@@ -77,31 +48,6 @@ const partitionDomainsByCacheState = (domains: Set<string>) => {
     }
   }
   return { cached: cachedDomains, uncached: uncachedDomains };
-};
-
-const fetchDomainAvailability = async (domains: string[]) =>
-  await vercel.domainsRegistrar.getBulkAvailability({
-    teamId: env.VERCEL_TEAM_ID,
-    requestBody: {
-      domains,
-    },
-  });
-
-const cacheDomain = async (domain: string, available: boolean) => {
-  await db
-    .insert(domainCache)
-    .values({
-      domain,
-      available,
-      checkedAt: Date.now(),
-    })
-    .onConflictDoUpdate({
-      target: domainCache.domain,
-      set: {
-        available,
-        checkedAt: Date.now(),
-      },
-    });
 };
 
 const checkDomains = async (domains: Set<string>) => {
@@ -125,8 +71,6 @@ const checkDomains = async (domains: Set<string>) => {
         await cacheDomain(domain, available);
         results.push({ domain, available });
       }
-
-      // await Bun.sleep(1000);
     }
 
     console.log("Checked and cached results for", uncached.length, "domains");

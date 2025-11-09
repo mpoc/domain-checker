@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
+import { chunk } from "./chunk";
 
 const domainCache = sqliteTable("domain_cache", {
   domain: text("domain").primaryKey(),
@@ -27,9 +28,6 @@ const vercel = new Vercel({
   bearerToken: process.env.VERCEL_BEARER_TOKEN,
 });
 
-const domainSchema = z.hostname();
-const domainsArraySchema = z.array(domainSchema);
-
 const loadDomainsFromFile = async (path: string): Promise<Set<string>> => {
   const file = Bun.file(path);
   const domains = await file.text();
@@ -40,7 +38,7 @@ const loadDomainsFromFile = async (path: string): Promise<Set<string>> => {
     .filter((line) => line.length > 0 && !line.startsWith("#")); // Allow comments with #
 
   try {
-    const validatedDomains = domainsArraySchema.parse(lines);
+    const validatedDomains = z.hostname().array().parse(lines);
     const uniqueValidatedDomains = new Set(validatedDomains);
     console.log(
       "Successfully loaded and validated",
@@ -103,14 +101,6 @@ const cacheDomain = async (domain: string, available: boolean) => {
         checkedAt: Date.now(),
       },
     });
-};
-
-const chunk = <T>(arr: T[], chunkSize = 50) => {
-  const chunks: T[][] = [];
-  for (let i = 0; i < arr.length; i += chunkSize) {
-    chunks.push(arr.slice(i, i + chunkSize));
-  }
-  return chunks;
 };
 
 const checkDomains = async (domains: Set<string>) => {

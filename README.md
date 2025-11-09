@@ -18,13 +18,14 @@ VERCEL_TEAM_ID=your_vercel_team_id
 ### Run
 
 ```bash
-echo example.com > domains.txt
 bun i
+echo example.com > domains.txt
 bun src/index.ts domains.txt
 ```
 
 ### View Results
 
 ```bash
-uvx datasette serve domains.sqlite
+# Runs Datasette through uv
+bun inspect domains.sqlite
 ```

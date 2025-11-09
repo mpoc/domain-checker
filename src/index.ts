@@ -105,6 +105,14 @@ const cacheDomain = async (domain: string, available: boolean) => {
     });
 };
 
+const chunk = <T>(arr: T[], chunkSize = 50) => {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += chunkSize) {
+    chunks.push(arr.slice(i, i + chunkSize));
+  }
+  return chunks;
+};
+
 const checkDomains = async (domains: Set<string>) => {
   const { cached: results, uncached } = partitionDomainsByCacheState(domains);
 
@@ -113,11 +121,7 @@ const checkDomains = async (domains: Set<string>) => {
   if (uncached.length) {
     console.log("Checking availability for", uncached.length, "domains");
 
-    const chunks: string[][] = [];
-    const CHUNK_SIZE = 50;
-    for (let i = 0; i < uncached.length; i += CHUNK_SIZE) {
-      chunks.push(uncached.slice(i, i + CHUNK_SIZE));
-    }
+    const chunks = chunk(uncached);
 
     for (const [index, chunk] of chunks.entries()) {
       console.log(
